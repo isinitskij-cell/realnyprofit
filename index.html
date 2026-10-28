@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Реальний вихлоп | Калькулятор кур'єра</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js для графіків -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Підключаємо наші стилі -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="min-h-screen p-4 flex flex-col items-center pb-12">
+
+    <div class="w-full max-w-md app-card rounded-3xl p-5 shadow-2xl">
+        <div class="flex justify-between items-center mb-4">
+            <h1 id="t-title" class="text-lg font-black text-sky-400 tracking-wider whitespace-nowrap">Реальний вихлоп</h1>
+            <div class="flex gap-1.5">
+                <button onclick="toggleCurrency()" id="currencyBtn" class="bg-[#1c1c36] hover:bg-[#25254a] text-sky-400 text-xs font-bold px-2.5 py-2 rounded-xl transition border border-[#2d2d59]">
+                    ₴
+                </button>
+                <button onclick="toggleLang()" id="langBtn" class="bg-[#1c1c36] hover:bg-[#25254a] text-sky-400 text-xs font-bold px-2.5 py-2 rounded-xl transition border border-[#2d2d59]">
+                    UA
+                </button>
+                <button onclick="openCalendarModal()" class="bg-[#1c1c36] hover:bg-[#25254a] text-sky-400 text-xs font-bold px-3 py-2 rounded-xl transition border border-[#2d2d59] flex items-center gap-1">
+                    📅 <span id="t-calendar-btn">Календар</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Індикатор вибраної дати для введення -->
+        <div id="targetDateBanner" class="hidden mb-4 bg-sky-500/10 border border-sky-500/30 p-2.5 rounded-xl flex justify-between items-center text-xs text-sky-300">
+            <span>📅 Введення зміни за: <strong id="targetDateText"></strong></span>
+            <button onclick="clearTargetDate()" class="text-xs hover:text-white font-bold px-1.5 py-0.5 bg-sky-500/20 rounded">✕ Скинути</button>
+        </div>
+
+        <!-- Перемикач вкладок -->
+        <div class="grid grid-cols-3 gap-1.5 mb-5 bg-[#0b0b16] p-1.5 rounded-2xl border border-[#232342]">
+            <button onclick="switchTab('shift')" id="tabShiftBtn" class="py-2 text-[11px] font-bold rounded-xl transition app-btn-active">
+                📊 <span id="t-tab-shift">Зміна</span>
+            </button>
+            <button onclick="switchTab('order')" id="tabOrderBtn" class="py-2 text-[11px] font-bold rounded-xl transition text-slate-400 hover:text-white">
+                ⚡ <span id="t-tab-order">Замовлення</span>
+            </button>
+            <button onclick="switchTab('profile')" id="tabProfileBtn" class="py-2 text-[11px] font-bold rounded-xl transition text-slate-400 hover:text-white">
+                👤 <span id="t-tab-profile">Профіль</span>
+            </button>
+        </div>
+
+        <!-- ВКЛАДКА 1: ОБЛІК ЗМІНИ -->
+        <div id="sectionShift" class="space-y-4">
+            <p id="t-subtitle" class="text-xs text-slate-400 mb-2">Калькулятор реального профіту кур'єра</p>
+
+            <div class="space-y-2">
+                <div class="flex justify-between items-center">
+                    <span class="text-[10px] uppercase tracking-wider text-slate-400" id="t-vehicle-title">🛵 Транспорт:</span>
+                    <button onclick="openCustomVehicleModal()" class="text-[10px] text-sky-400 hover:text-sky-300 font-bold bg-[#0b0b16] border border-[#232342] px-2 py-0.5 rounded-lg transition">
+                        + Свій транспорт
+                    </button>
+                </div>
+                <div id="vehiclesContainer" class="grid grid-cols-3 gap-2"></div>
+            </div>
+
+            <div class="bg-[#0b0b16] p-3 rounded-2xl border border-[#232342] flex items-center justify-between">
+                <div>
+                    <span id="t-wear-label" class="block text-xs uppercase tracking-wider text-slate-400">Амортизація за 1 км</span>
+                </div>
+                <div class="w-24 flex items-center gap-1">
+                    <input type="text" id="wearRateInput" value="1.5" class="w-full app-input rounded-xl px-2.5 py-1.5 text-right text-sky-400 font-bold">
+                    <span class="currency-label text-xs text-slate-500">₴</span>
+                </div>
+            </div>
+
+            <form id="shiftForm" class="space-y-4">
+                <div>
+                    <label id="t-service-label" class="block text-xs uppercase tracking-wider text-slate-400 mb-1">Сервіс / Джерело</label>
+                    <select id="serviceSource" class="w-full app-input rounded-xl px-4 py-3 text-sm">
+                        <option value="Glovo">Glovo (Жовтий)</option>
+                        <option value="Bolt">Bolt Food (Зелений)</option>
+                        <option value="Local" id="t-opt-local">Локальний заклад (Синій)</option>
+                        <option value="Other" id="t-opt-other">Інше</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label id="t-rev-label" class="block text-xs uppercase tracking-wider text-slate-400 mb-1">Виручка</label>
+                        <input type="text" id="revenue" required placeholder="1200" class="w-full app-input rounded-xl px-4 py-3 text-lg">
+                    </div>
+                    <div>
+                        <label id="t-tips-label" class="block text-xs uppercase tracking-wider text-slate-400 mb-1">Чай</label>
+                        <input type="text" id="tips" placeholder="100" value="0" class="w-full app-input rounded-xl px-4 py-3 text-lg">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label id="t-dist-label" class="block text-xs uppercase tracking-wider text-slate-400 mb-1">Пробіг (км)</label>
+                        <input type="text" id="distance" required placeholder="75" class="w-full app-input rounded-xl px-4 py-3 text-lg">
+                    </div>
+                    <div id="fuelContainer">
+                        <label id="t-fuel-label" class="block text-xs uppercase tracking-wider text-slate-400 mb-1">Пальне (<span class="currency-label">₴</span>)</label>
+                        <input type="text" id="fuel" placeholder="180" value="0" class="w-full app-input rounded-xl px-4 py-3 text-lg">
+                    </div>
+                </div>
+
+                <div>
+                    <label id="t-hours-label" class="block text-xs uppercase tracking-wider text-slate-400 mb-1">Час на лінії (годин)</label>
+                    <input type="text" id="hours" required placeholder="6" class="w-full app-input rounded-xl px-4 py-3 text-lg">
+                </div>
+
+                <button type="submit" id="t-submit-btn" class="w-full app-btn-active font-bold py-3.5 rounded-xl transition tracking-wide uppercase text-sm mt-2">
+                    Додати зміну
+                </button>
+            </form>
+
+            <div id="results" class="hidden pt-4 border-t border-[#232342] space-y-3">
+                <h2 id="t-res-title" class="text-sm uppercase tracking-wider text-sky-400 font-bold">Підсумки зміни:</h2>
+                
+                <div class="bg-[#0b0b16] p-4 rounded-2xl border border-[#232342] flex justify-between items-center">
+                    <span id="t-net-label" class="text-slate-400 text-sm">Чистий профіт:</span>
+                    <span id="resNetProfit" class="text-xl font-black text-emerald-400">0</span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-[#0b0b16] p-3 rounded-2xl border border-[#232342]">
+                        <span id="t-hour-label" class="block text-xs text-slate-500">Вихлоп за годину:</span>
+                        <span id="resPerHour" class="text-base font-bold text-white">0</span>
+                    </div>
+                    <div class="bg-[#0b0b16] p-3 rounded-2xl border border-[#232342]">
+                        <span id="t-wear-res-label" class="block text-xs text-slate-500">Амортизація:</span>
+                        <span id="resWear" class="text-base font-bold text-sky-200">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ВКЛАДКА 2: ОЦІНКА ЗАМОВЛЕННЯ -->
+        <div id="sectionOrder" class="space-y-4 hidden">
+            <p id="t-order-subtitle" class="text-xs text-slate-400 mb-2">Швидкий розрахунок: чи варто брати це замовлення?</p>
+
+            <div class="space-y-2">
+                <div class="flex justify-between items-center">
+                    <span class="text-[10px] uppercase tracking-wider text-slate-400">🛵 Транспорт:</span>
+                    <button onclick="openCustomVehicleModal()" class="text-[10px] text-sky-400 hover:text-sky-300 font-bold bg-[#0b0b16] border border-[#232342] px-2 py-0.5 rounded-lg transition">
+                        + Свій транспорт
+                    </button>
+                </div>
+                <div id="orderVehiclesContainer" class="grid grid-cols-3 gap-2"></div>
+            </div>
+
+            <div class="bg-[#0b0b16] p-3 rounded-2xl border border-[#232342] flex items-center justify-between">
+                <div>
+                    <span id="t-order-wear-label" class="block text-xs uppercase tracking-wider text-slate-400">Амортизація за 1 км</span>
+                </div>
+                <div class="w-24 flex items-center gap-1">
+                    <input type="text" id="orderWearRateInput" value="1.5" class="w-full app-input rounded-xl px-2.5 py-1.5 text-right text-sky-400 font-bold">
+                    <span class="currency-label text-xs text-slate-500">₴</span>
+                </div>
+            </div>
+
+            <div>
+                <label id="t-order-pay" class="block text-xs uppercase tracking-wider text-slate-400 mb-1">Оплата за замовлення</label>
+                <input type="text" id="orderPay" placeholder="Наприклад: 120" class="w-full app-input rounded-xl px-4 py-3 text-lg">
+            </div>
+
+            <div>
+                <label id="t-order-dist" class="block text-xs uppercase tracking-wider text-slate-400 mb-1">Загальний шлях по замовленню (км)</label>
+                <input type="text" id="orderDist" placeholder="Наприклад: 3.5" class="w-full app-input rounded-xl px-4 py-3 text-lg">
+            </div>
+
+            <button onclick="calculateOrder()" id="t-order-calc-btn" class="w-full app-btn-active font-bold py-3.5 rounded-xl transition tracking-wide uppercase text-sm mt-2">
+                Розрахувати вигоду замовлення
+            </button>
+
+            <div id="orderResults" class="hidden pt-4 border-t border-[#232342] space-y-3">
+                <div id="orderVerdictBox" class="p-4 rounded-xl border text-center">
+                    <span id="orderVerdictText" class="text-sm font-black uppercase tracking-wider block"></span>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-[#0b0b16] p-3 rounded-2xl border border-[#232342] text-center">
+                        <span class="block text-xs text-slate-500" id="t-order-net-label">Чистий профіт:</span>
+                        <span id="orderNet" class="text-base font-bold text-emerald-400">0</span>
+                    </div>
+                    <div class="bg-[#0b0b16] p-3 rounded-2xl border border-[#232342] text-center">
+                        <span class="block text-xs text-slate-500" id="t-order-am-label">Амортизація:</span>
+                        <span id="orderAmort" class="text-base font-bold text-sky-200">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ВКЛАДКА 3: ПРОФІЛЬ -->
+        <div id="sectionProfile" class="space-y-4 hidden">
+            <p id="t-profile-subtitle" class="text-xs text-slate-400 mb-2">Статистика, ранг та твої досягнення</p>
+
+            <div class="bg-[#0b0b16] p-3.5 rounded-2xl border border-[#232342]">
+                <div class="flex justify-between items-center mb-2">
+                    <div>
+                        <span class="text-[10px] text-slate-500 uppercase tracking-wider block" id="t-rank-title">Ранг:</span>
+                        <span id="courierRank" class="text-xs font-bold text-sky-300">🧢 Новачок асфальту</span>
+                    </div>
+                    <button onclick="openGoalModal()" class="text-[10px] bg-[#131324] hover:bg-[#1c1c36] text-sky-400 border border-[#232342] px-2.5 py-1 rounded-xl transition font-bold" id="t-goal-btn">
+                        🎯 Ціль місяця
+                    </button>
+                </div>
+                <div class="w-full bg-[#1c1c36] rounded-full h-2.5 overflow-hidden border border-[#232342] mb-1">
+                    <div id="goalProgressBar" class="bg-gradient-to-r from-sky-400 to-indigo-500 h-2.5 rounded-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+                <div class="flex justify-between text-[10px] text-slate-400">
+                    <span id="goalProgressText">0 / 0 ₴</span>
+                    <span id="goalPercentText">0%</span>
+                </div>
+            </div>
+
+            <div class="bg-[#0b0b16] p-3 rounded-2xl border border-[#232342]">
+                <h3 id="t-chart-title" class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Динаміка профіту</h3>
+                <canvas id="earningsChart"></canvas>
+            </div>
+
+            <div class="bg-[#0b0b16] p-3 rounded-2xl border border-[#232342]">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-sky-400 mb-2" id="t-ach-title">🏆 Досягнення кур'єра</h3>
+                <div id="achievementsGrid" class="grid grid-cols-3 gap-2"></div>
+            </div>
+
+            <div class="bg-[#0b0b16] p-3 rounded-2xl border border-[#232342] space-y-2">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400" id="t-backup-title">💾 Резервна копія даних</h3>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="exportData()" class="bg-[#131324] hover:bg-[#1c1c36] border border-[#232342] text-sky-400 text-xs font-bold py-2.5 px-3 rounded-xl transition" id="t-export-btn">
+                        📤 Експорт
+                    </button>
+                    <label class="bg-[#131324] hover:bg-[#1c1c36] border border-[#232342] text-sky-400 text-xs font-bold py-2.5 px-3 rounded-xl transition text-center cursor-pointer">
+                        <span id="t-import-btn">📥 Імпорт</span>
+                        <input type="file" id="importFile" accept=".json" onchange="importData(event)" class="hidden">
+                    </label>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="w-full max-w-md mt-4 text-center">
+        <a href="https://send.monobank.ua/jar/YOUR_JAR_LINK" target="_blank" id="t-support-btn" class="inline-block w-full app-card hover:bg-[#1c1c36] text-sky-400 font-bold py-3 rounded-2xl transition text-xs tracking-wide uppercase shadow-xl border border-[#232342]">
+            ☕ Донат автору (на каву)
+        </a>
+    </div>
+
+    <!-- МОДАЛЬНІ ВІКНА -->
+    <div id="customVehicleModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="app-card rounded-3xl w-full max-w-sm p-5 shadow-2xl border border-[#232342]">
+            <h3 class="text-base font-bold text-sky-400 uppercase tracking-wider mb-2" id="t-modal-veh-title">Свій транспорт</h3>
+            <p class="text-xs text-slate-400 mb-4" id="t-modal-veh-sub">Вкажи назву та амортизацію за 1 км.</p>
+            <input type="text" id="customVehName" placeholder="Наприклад: Електросамокат" class="w-full app-input rounded-xl px-4 py-3 text-sm mb-3">
+            <input type="text" id="customVehWear" placeholder="Амортизація за 1 км (наприклад: 0.8)" class="w-full app-input rounded-xl px-4 py-3 text-sm mb-4">
+            <div class="flex gap-2">
+                <button onclick="saveCustomVehicle()" class="w-full app-btn-active font-bold py-3 rounded-xl transition text-xs uppercase" id="t-save-veh-btn">Додати</button>
+                <button onclick="closeCustomVehicleModal()" class="w-full bg-[#1c1c36] hover:bg-[#25254a] text-white font-bold py-3 rounded-xl transition text-xs uppercase" id="t-cancel-veh-btn">Скасувати</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="calendarModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="app-card rounded-3xl w-full max-w-md p-5 shadow-2xl flex flex-col max-h-[90vh] border border-[#232342]">
+            <div class="flex justify-between items-center mb-4 pb-3 border-b border-[#232342]">
+                <h2 id="t-modal-title" class="text-base font-bold text-sky-400 uppercase tracking-wider">Календар та підсумки</h2>
+                <button onclick="closeCalendarModal()" class="text-slate-400 hover:text-white text-lg font-bold px-2 py-1 rounded-xl">✕</button>
+            </div>
+
+            <div class="flex justify-between items-center mb-3 bg-[#0b0b16] p-3 rounded-2xl border border-[#232342]">
+                <button onclick="changeMonth(-1)" class="text-sky-400 font-bold px-3 py-1 bg-[#131324] rounded-xl hover:bg-[#1c1c36] transition">◀</button>
+                <span id="monthYearTitle" class="text-sm font-bold text-white uppercase tracking-wider">Місяць Рік</span>
+                <button onclick="changeMonth(1)" class="text-sky-400 font-bold px-3 py-1 bg-[#131324] rounded-xl hover:bg-[#1c1c36] transition">▶</button>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 mb-4 bg-[#0b0b16] p-3 rounded-2xl border border-[#232342] text-center">
+                <div>
+                    <span id="t-m-profit" class="text-[10px] text-slate-500 uppercase block">Профіт за міс</span>
+                    <span id="monthTotalProfit" class="text-xs font-black text-emerald-400">0 ₴</span>
+                </div>
+                <div>
+                    <span id="t-m-tips" class="text-[10px] text-slate-500 uppercase block">Чай за міс</span>
+                    <span id="monthTotalTips" class="text-xs font-black text-sky-400">0 ₴</span>
+                </div>
+                <div>
+                    <span id="t-m-dist" class="text-[10px] text-slate-500 uppercase block">Пробіг</span>
+                    <span id="monthTotalDistance" class="text-xs font-bold text-white">0 км</span>
+                </div>
+                <div>
+                    <span id="t-m-hour" class="text-[10px] text-slate-500 uppercase block">За год. сер.</span>
+                    <span id="monthAvgPerHour" class="text-xs font-bold text-sky-300">0 ₴</span>
+                </div>
+            </div>
+
+            <div id="weekDaysHeader" class="grid grid-cols-7 gap-1 text-center text-[10px] uppercase font-bold text-slate-500 mb-2"></div>
+            <div id="calendarDaysGrid" class="grid grid-cols-7 gap-1.5 overflow-y-auto mb-4"></div>
+
+            <div id="shiftDetailsBox" class="mt-auto bg-[#0b0b16] p-4 rounded-2xl border border-[#232342] hidden max-h-48 overflow-y-auto">
+                <div class="flex justify-between items-center mb-2 pb-2 border-b border-[#232342]">
+                    <span class="text-xs uppercase tracking-wider text-sky-400 font-bold"><span id="t-shifts-for">Дата:</span> <span id="selectedDateTitle"></span></span>
+                    <button onclick="selectDateForInput()" class="text-[10px] app-btn-active font-bold px-2.5 py-1 rounded-xl transition" id="t-btn-fill-date">➕ Заповнити зміну</button>
+                </div>
+                <div id="shiftsListContainer" class="space-y-2"></div>
+            </div>
+
+            <button onclick="closeCalendarModal()" id="t-close-btn" class="w-full mt-3 bg-[#1c1c36] hover:bg-[#25254a] text-white font-bold py-3 rounded-xl transition text-xs uppercase tracking-wide">
+                Закрити
+            </button>
+        </div>
+    </div>
+
+    <!-- Підключаємо нашу логіку -->
+    <script src="script.js"></script>
+</body>
+</html>
